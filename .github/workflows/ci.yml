@@ -9,19 +9,28 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        toolchain: [1.56, stable, nightly]
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Stable
-        run: cargo test
-      - name: Oldstable
-        run: |
-          rustup default 1.56.0
-          cargo test
-      - name: Clippy
-        run: |
-          rustup component add clippy
-          cargo clippy --all-targets
+      - uses: actions/checkout@v3
+      - name: Install clippy
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+          components: clippy
+          override: true
+
+      - uses: actions-rs/clippy-check@v1
+        name: Run clippy
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
+
+      - uses: actions-rs/cargo@v1
+        name: Run tests
+        with:
+          command: test
